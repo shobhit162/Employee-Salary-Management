@@ -1,4 +1,4 @@
-# Employee Salary Management System — Requirements
+# Employee Salary Management System — Detailed Technical Document
 
 ## 1. Goal
 
