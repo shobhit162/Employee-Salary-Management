@@ -90,4 +90,18 @@ public class GlobalExceptionHandler {
 
         return problem;
     }
+
+    @ExceptionHandler(BusinessRuleViolationException.class)
+        public ProblemDetail handleBusinessRuleViolation(
+                BusinessRuleViolationException exception
+        ) {
+            ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    exception.getMessage()
+            );
+
+            problem.setTitle("Business Rule Violation");
+
+            return problem;
+        }
 }
