@@ -39,4 +39,16 @@ public class CompensationController {
     ) {
         return compensationService.getHistory(employeeId);
     }
+
+    @DeleteMapping("/{compensationId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelScheduledCompensation(
+            @PathVariable UUID employeeId,
+            @PathVariable UUID compensationId
+    ) {
+        compensationService.cancelScheduledCompensation(
+                employeeId,
+                compensationId
+        );
+    }
 }

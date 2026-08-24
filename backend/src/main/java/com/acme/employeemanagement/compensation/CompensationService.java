@@ -110,6 +110,39 @@ public class CompensationService {
         return compensationMapper.toResponse(saved);
     }
 
+    @Transactional
+    public void cancelScheduledCompensation(
+            UUID employeeId,
+            UUID compensationId
+    ) {
+        LocalDate today = LocalDate.now(clock);
+
+        Employee employee = employeeRepository.findByIdForUpdate(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Employee not found: " + employeeId
+                ));
+
+        Compensation compensation =
+                compensationRepository.findById(compensationId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Compensation not found: " + compensationId
+                        ));
+
+        if (!compensation.getEmployee().getId().equals(employeeId)) {
+            throw new ResourceNotFoundException(
+                    "Compensation does not belong to employee: " + employeeId
+            );
+        }
+
+        if (!compensation.getEffectiveFrom().isAfter(today)) {
+            throw new BusinessRuleViolationException(
+                    "Only future scheduled compensation can be cancelled"
+            );
+        }
+
+        compensationRepository.delete(compensation);
+    }
+
     public CompensationResponse getCurrent(UUID employeeId) {
         LocalDate today = LocalDate.now(clock);
 

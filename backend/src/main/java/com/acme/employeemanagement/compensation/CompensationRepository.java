@@ -46,16 +46,8 @@ public interface CompensationRepository
             @Param("date") LocalDate date
     );
 
-    @Query("""
-            select count(c) > 0
-            from Compensation c
-            where c.employee.id = :employeeId
-              and c.effectiveFrom < :endDate
-              and (c.effectiveTo is null or c.effectiveTo > :startDate)
-            """)
-    boolean existsOverlappingCompensation(
-            @Param("employeeId") UUID employeeId,
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
+    boolean existsByEmployeeIdAndEffectiveFromAfter(
+            UUID employeeId,
+            LocalDate date
     );
 }

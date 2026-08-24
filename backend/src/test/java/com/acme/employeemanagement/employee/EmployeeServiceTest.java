@@ -1,7 +1,9 @@
 package com.acme.employeemanagement.employee;
 
+import com.acme.employeemanagement.common.exception.BusinessRuleViolationException;
 import com.acme.employeemanagement.common.exception.DuplicateResourceException;
 import com.acme.employeemanagement.common.exception.ResourceNotFoundException;
+import com.acme.employeemanagement.compensation.CompensationRepository;
 import com.acme.employeemanagement.employee.dto.CreateEmployeeRequest;
 import com.acme.employeemanagement.employee.dto.EmployeeResponse;
 import com.acme.employeemanagement.employee.dto.UpdateEmployeeRequest;
@@ -12,6 +14,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,14 +35,25 @@ class EmployeeServiceTest {
     @Mock
     private EmployeeMapper employeeMapper;
 
+    @Mock
+    private CompensationRepository compensationRepository;
+
     private EmployeeService employeeService;
+    private Clock clock;
 
     @BeforeEach
     void setUp() {
-        employeeService = new EmployeeService(
-                employeeRepository,
-                employeeMapper
+        clock = Clock.fixed(
+        Instant.parse("2026-08-24T00:00:00Z"),
+        ZoneOffset.UTC
         );
+
+        employeeService = new EmployeeService(
+        employeeRepository,
+        employeeMapper,
+        compensationRepository,
+        clock
+);
     }
 
     @Test
@@ -283,5 +300,74 @@ class EmployeeServiceTest {
         )
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("already terminated");
+    }
+
+    @Test
+    void shouldRejectTerminationWhenFutureCompensationIsScheduled() {
+        UUID employeeId = UUID.randomUUID();
+
+        Employee employee = new Employee(
+                "EMP-001",
+                "John",
+                "Doe",
+                "john@example.com",
+                "US",
+                "Engineering",
+                "Software Engineer"
+        );
+
+        when(employeeRepository.findById(employeeId))
+                .thenReturn(Optional.of(employee));
+
+        when(compensationRepository
+                .existsByEmployeeIdAndEffectiveFromAfter(
+                        employeeId,
+                        LocalDate.of(2026, 8, 24)
+                ))
+                .thenReturn(true);
+
+        assertThatThrownBy(() ->
+                employeeService.terminate(employeeId)
+        )
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessageContaining(
+                        "future compensation change is scheduled"
+                );
+    }
+
+    @Test
+    void shouldTerminateWhenNoFutureCompensationIsScheduled() {
+        UUID employeeId = UUID.randomUUID();
+
+        Employee employee = new Employee(
+                "EMP-001",
+                "John",
+                "Doe",
+                "john@example.com",
+                "US",
+                "Engineering",
+                "Software Engineer"
+        );
+
+        when(employeeRepository.findById(employeeId))
+                .thenReturn(Optional.of(employee));
+
+        when(compensationRepository
+                .existsByEmployeeIdAndEffectiveFromAfter(
+                        employeeId,
+                        LocalDate.of(2026, 8, 24)
+                ))
+                .thenReturn(false);
+
+        when(employeeMapper.toResponse(employee))
+                .thenReturn(null);
+
+        employeeService.terminate(employeeId);
+
+        assertThat(employee.getEmploymentStatus())
+                .isEqualTo(EmploymentStatus.TERMINATED);
+
+        assertThat(employee.getTerminationDate())
+                .isEqualTo(LocalDate.of(2026, 8, 24));
     }
 }

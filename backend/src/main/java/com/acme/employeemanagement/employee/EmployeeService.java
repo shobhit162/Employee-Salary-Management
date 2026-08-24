@@ -1,7 +1,9 @@
 package com.acme.employeemanagement.employee;
 
+import com.acme.employeemanagement.common.exception.BusinessRuleViolationException;
 import com.acme.employeemanagement.common.exception.DuplicateResourceException;
 import com.acme.employeemanagement.common.exception.ResourceNotFoundException;
+import com.acme.employeemanagement.compensation.CompensationRepository;
 import com.acme.employeemanagement.employee.dto.CreateEmployeeRequest;
 import com.acme.employeemanagement.employee.dto.EmployeeResponse;
 import com.acme.employeemanagement.employee.dto.UpdateEmployeeRequest;
@@ -12,6 +14,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Locale;
 import java.util.UUID;
@@ -23,6 +26,8 @@ public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final EmployeeMapper employeeMapper;
+    private final CompensationRepository compensationRepository;
+    private final Clock clock;
 
     @Transactional
     public EmployeeResponse create(CreateEmployeeRequest request) {
@@ -106,7 +111,23 @@ public class EmployeeService {
     public EmployeeResponse terminate(UUID employeeId) {
         Employee employee = findEmployee(employeeId);
 
-        employee.terminate(LocalDate.now());
+        LocalDate today = LocalDate.now(clock);
+
+        boolean hasScheduledCompensation =
+                compensationRepository
+                        .existsByEmployeeIdAndEffectiveFromAfter(
+                                employeeId,
+                                today
+                        );
+
+        if (hasScheduledCompensation) {
+            throw new BusinessRuleViolationException(
+                    "Employee cannot be terminated while a future "
+                            + "compensation change is scheduled"
+            );
+        }
+
+        employee.terminate(today);
 
         return employeeMapper.toResponse(employee);
     }
