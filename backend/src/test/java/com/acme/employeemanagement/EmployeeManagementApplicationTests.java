@@ -1,4 +1,4 @@
-package com.acme.employee_management;
+package com.acme.employeemanagement;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
