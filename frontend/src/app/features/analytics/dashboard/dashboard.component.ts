@@ -80,7 +80,8 @@ export class DashboardComponent implements OnInit {
       this.breakdown()?.rows.map((row) => ({
         label: row.key,
         value: row.statistics.totalAnnualCompensation,
-        caption: `${row.statistics.employeeCount} employees`,
+        employeeCount: row.statistics.employeeCount,
+        average: row.statistics.average ?? undefined,
       })) ?? [],
   );
 
