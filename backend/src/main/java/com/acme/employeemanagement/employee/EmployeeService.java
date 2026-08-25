@@ -107,11 +107,26 @@ public class EmployeeService {
         return employeeMapper.toResponse(employee);
     }
 
+    /**
+     * Marks an employee as terminated. Salary history is intentionally left
+     * untouched so historical payroll reporting stays accurate.
+     */
     @Transactional
     public EmployeeResponse terminate(UUID employeeId) {
-        Employee employee = findEmployee(employeeId);
+        // Same lock as a salary change takes, so an employee cannot be
+        // terminated concurrently with a salary change being scheduled.
+        Employee employee = employeeRepository.findByIdForUpdate(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Employee not found: " + employeeId
+                ));
 
         LocalDate today = LocalDate.now(clock);
+
+        if (employee.getEmploymentStatus() == EmploymentStatus.TERMINATED) {
+            throw new BusinessRuleViolationException(
+                    "Employee is already terminated"
+            );
+        }
 
         boolean hasScheduledCompensation =
                 compensationRepository

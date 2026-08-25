@@ -46,8 +46,34 @@ public interface CompensationRepository
             @Param("date") LocalDate date
     );
 
+    /**
+     * Finds the period that was closed to make room for the compensation starting
+     * on {@code effectiveTo}. Used to restore salary coverage when a scheduled
+     * change is cancelled.
+     */
+    @Query("""
+            select c
+            from Compensation c
+            where c.employee.id = :employeeId
+              and c.effectiveTo = :effectiveTo
+            """)
+    Optional<Compensation> findPeriodEndingOn(
+            @Param("employeeId") UUID employeeId,
+            @Param("effectiveTo") LocalDate effectiveTo
+    );
+
     boolean existsByEmployeeIdAndEffectiveFromAfter(
             UUID employeeId,
             LocalDate date
     );
+
+    /**
+     * Currencies in active use, so analytics can fail loudly on a missing
+     * exchange rate instead of silently dropping salaries from the totals.
+     */
+    @Query("""
+            select distinct c.currency
+            from Compensation c
+            """)
+    List<String> findDistinctCurrencies();
 }

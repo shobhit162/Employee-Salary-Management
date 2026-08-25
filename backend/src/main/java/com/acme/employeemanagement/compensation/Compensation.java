@@ -85,6 +85,19 @@ public class Compensation {
         this.effectiveTo = effectiveTo;
     }
 
+    /**
+     * Re-opens a period that was closed only because a later salary change was
+     * scheduled. Cancelling that scheduled change must restore continuous salary
+     * coverage, otherwise the employee is left with a gap from the cancelled date.
+     */
+    public void reopen() {
+        this.effectiveTo = null;
+    }
+
+    public boolean isOpenEnded() {
+        return effectiveTo == null;
+    }
+
     @PrePersist
     void onCreate() {
         this.createdAt = Instant.now();

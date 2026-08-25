@@ -1,13 +1,20 @@
 package com.acme.employeemanagement.compensation;
 
 import com.acme.employeemanagement.compensation.dto.CompensationResponse;
+import com.acme.employeemanagement.compensation.dto.CompensationSummaryResponse;
 import com.acme.employeemanagement.compensation.dto.CreateCompensationRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,18 +33,11 @@ public class CompensationController {
         return compensationService.create(employeeId, request);
     }
 
-    @GetMapping("/current")
-    public CompensationResponse getCurrent(
+    @GetMapping
+    public CompensationSummaryResponse getSummary(
             @PathVariable UUID employeeId
     ) {
-        return compensationService.getCurrent(employeeId);
-    }
-
-    @GetMapping("/history")
-    public List<CompensationResponse> getHistory(
-            @PathVariable UUID employeeId
-    ) {
-        return compensationService.getHistory(employeeId);
+        return compensationService.getSummary(employeeId);
     }
 
     @DeleteMapping("/{compensationId}")
