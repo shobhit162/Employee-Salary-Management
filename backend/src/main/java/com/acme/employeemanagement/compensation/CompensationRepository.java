@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,6 +44,24 @@ public interface CompensationRepository
             """)
     List<Compensation> findScheduledCompensations(
             @Param("employeeId") UUID employeeId,
+            @Param("date") LocalDate date
+    );
+
+    /**
+     * The salaries effective on {@code date} for a whole page of employees.
+     *
+     * <p>Fetching these in one query keeps listing employees at two queries per
+     * page regardless of page size, instead of one per row.
+     */
+    @Query("""
+            select c
+            from Compensation c
+            where c.employee.id in :employeeIds
+              and c.effectiveFrom <= :date
+              and (c.effectiveTo is null or c.effectiveTo > :date)
+            """)
+    List<Compensation> findEffectiveCompensations(
+            @Param("employeeIds") Collection<UUID> employeeIds,
             @Param("date") LocalDate date
     );
 

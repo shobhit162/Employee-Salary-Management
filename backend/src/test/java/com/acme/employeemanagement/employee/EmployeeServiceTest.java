@@ -3,6 +3,7 @@ package com.acme.employeemanagement.employee;
 import com.acme.employeemanagement.common.exception.BusinessRuleViolationException;
 import com.acme.employeemanagement.common.exception.DuplicateResourceException;
 import com.acme.employeemanagement.common.exception.ResourceNotFoundException;
+import com.acme.employeemanagement.compensation.CompensationMapper;
 import com.acme.employeemanagement.compensation.CompensationRepository;
 import com.acme.employeemanagement.employee.dto.CreateEmployeeRequest;
 import com.acme.employeemanagement.employee.dto.EmployeeResponse;
@@ -53,6 +54,7 @@ class EmployeeServiceTest {
                 employeeRepository,
                 new EmployeeMapper(),
                 compensationRepository,
+                new CompensationMapper(),
                 clock
         );
     }

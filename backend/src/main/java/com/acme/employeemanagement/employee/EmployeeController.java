@@ -1,6 +1,8 @@
 package com.acme.employeemanagement.employee;
 
 import com.acme.employeemanagement.employee.dto.CreateEmployeeRequest;
+import com.acme.employeemanagement.employee.dto.EmployeeFilterOptionsResponse;
+import com.acme.employeemanagement.employee.dto.EmployeeListItemResponse;
 import com.acme.employeemanagement.employee.dto.EmployeeResponse;
 import com.acme.employeemanagement.employee.dto.UpdateEmployeeRequest;
 import jakarta.validation.Valid;
@@ -11,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 @RestController
@@ -28,8 +31,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EmployeeController {
 
-    private static final int DEFAULT_PAGE_SIZE = 25;
     private static final int MAX_PAGE_SIZE = 100;
+
+    /**
+     * Sorting maps straight onto entity properties, so the accepted values are
+     * whitelisted rather than passed through — an unknown property would
+     * otherwise surface as a 500.
+     */
+    private static final Set<String> SORTABLE_FIELDS = Set.of(
+            "employeeCode",
+            "firstName",
+            "lastName",
+            "email",
+            "countryCode",
+            "department",
+            "jobTitle",
+            "employmentStatus"
+    );
 
     private final EmployeeService employeeService;
 
@@ -51,8 +69,13 @@ public class EmployeeController {
         return employeeService.getById(employeeId);
     }
 
+    @GetMapping("/filter-options")
+    public EmployeeFilterOptionsResponse filterOptions() {
+        return employeeService.filterOptions();
+    }
+
     @GetMapping
-    public Page<EmployeeResponse> search(
+    public Page<EmployeeListItemResponse> search(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String countryCode,
             @RequestParam(required = false) String department,
@@ -62,16 +85,16 @@ public class EmployeeController {
             @RequestParam(defaultValue = "lastName") String sortBy,
             @RequestParam(defaultValue = "ASC") Sort.Direction direction
     ) {
-        int validatedSize = Math.min(
-                Math.max(size, 1),
-                MAX_PAGE_SIZE
-        );
-
-        int validatedPage = Math.max(page, 0);
+        if (!SORTABLE_FIELDS.contains(sortBy)) {
+            throw new IllegalArgumentException(
+                    "Cannot sort by '" + sortBy + "'. Sortable fields: "
+                            + String.join(", ", new TreeSet<>(SORTABLE_FIELDS))
+            );
+        }
 
         Pageable pageable = PageRequest.of(
-                validatedPage,
-                validatedSize,
+                Math.max(page, 0),
+                Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
                 Sort.by(direction, sortBy)
         );
 

@@ -3,8 +3,12 @@ package com.acme.employeemanagement.employee;
 import com.acme.employeemanagement.common.exception.BusinessRuleViolationException;
 import com.acme.employeemanagement.common.exception.DuplicateResourceException;
 import com.acme.employeemanagement.common.exception.ResourceNotFoundException;
+import com.acme.employeemanagement.compensation.CompensationMapper;
 import com.acme.employeemanagement.compensation.CompensationRepository;
+import com.acme.employeemanagement.compensation.dto.CompensationResponse;
 import com.acme.employeemanagement.employee.dto.CreateEmployeeRequest;
+import com.acme.employeemanagement.employee.dto.EmployeeFilterOptionsResponse;
+import com.acme.employeemanagement.employee.dto.EmployeeListItemResponse;
 import com.acme.employeemanagement.employee.dto.EmployeeResponse;
 import com.acme.employeemanagement.employee.dto.UpdateEmployeeRequest;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +34,7 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final EmployeeMapper employeeMapper;
     private final CompensationRepository compensationRepository;
+    private final CompensationMapper compensationMapper;
     private final Clock clock;
 
     @Transactional
@@ -57,7 +65,12 @@ public class EmployeeService {
         return employeeMapper.toResponse(employee);
     }
 
-    public Page<EmployeeResponse> search(
+    /**
+     * Pages employees straight from the database and attaches each one's current
+     * salary with a single extra query, so listing stays at two queries per page
+     * no matter how large the organisation grows.
+     */
+    public Page<EmployeeListItemResponse> search(
             String search,
             String countryCode,
             String department,
@@ -71,9 +84,39 @@ public class EmployeeService {
                 EmployeeSpecifications.hasStatus(status)
         );
 
-        return employeeRepository
-                .findAll(specification, pageable)
-                .map(employeeMapper::toResponse);
+        Page<Employee> page = employeeRepository.findAll(specification, pageable);
+
+        if (page.isEmpty()) {
+            return page.map(employee -> new EmployeeListItemResponse(
+                    employeeMapper.toResponse(employee),
+                    null
+            ));
+        }
+
+        Map<UUID, CompensationResponse> currentByEmployee = compensationRepository
+                .findEffectiveCompensations(
+                        page.getContent().stream().map(Employee::getId).toList(),
+                        LocalDate.now(clock)
+                )
+                .stream()
+                .map(compensationMapper::toResponse)
+                .collect(Collectors.toMap(
+                        CompensationResponse::employeeId,
+                        Function.identity()
+                ));
+
+        return page.map(employee -> new EmployeeListItemResponse(
+                employeeMapper.toResponse(employee),
+                currentByEmployee.get(employee.getId())
+        ));
+    }
+
+    /** Distinct values behind the list's country and department filters. */
+    public EmployeeFilterOptionsResponse filterOptions() {
+        return new EmployeeFilterOptionsResponse(
+                employeeRepository.findDistinctCountryCodes(),
+                employeeRepository.findDistinctDepartments()
+        );
     }
 
     @Transactional
