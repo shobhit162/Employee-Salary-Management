@@ -106,6 +106,13 @@ public class CompensationService {
 
         current.closeAt(effectiveFrom);
 
+        // Hibernate flushes inserts before updates, so without an explicit flush
+        // the new open-ended period would reach the database while the current
+        // one is still open and the exclusion constraint would reject both.
+        // Every write to the timeline has to close a period before opening the
+        // next one; see cancelScheduledCompensation for the mirror image.
+        compensationRepository.flush();
+
         Compensation scheduled = compensationRepository.save(new Compensation(
                 employee,
                 amount,
