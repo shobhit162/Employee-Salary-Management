@@ -1,471 +1,267 @@
-# Employee Salary Management System — Detailed Technical Document
+# ACME Salary Management
 
-## 1. Goal
+Web-based salary management for ACME's HR team — replacing the spreadsheets
+currently used to track pay for ~10,000 employees across ten countries.
 
-Build a web-based salary management system that enables ACME's HR team to manage employee salary data and gain clear, actionable insights into how the organization pays its employees.
+It does two things:
 
-The system will replace the current Excel-based workflow with a centralized, maintainable application capable of supporting an initial organization of 10,000 employees and scaling beyond that.
+1. **Manage salaries** — hire, search, update and terminate employees; set and
+   schedule salary changes; keep an immutable salary history.
+2. **Answer questions about pay** — total payroll, average and median salary,
+   how pay differs by country and department, and how salaries are distributed —
+   all in a single reporting currency, with drill-down into the employees behind
+   any number.
 
-The product will have two primary capabilities:
-
-1. **Salary Management** — maintain employee salary information and salary history.
-2. **Compensation Intelligence** — provide analytical dashboards, interactive filtering, and visualizations that help HR understand organizational pay patterns.
-
----
-
-## 2. Primary User
-
-### HR Manager
-
-The HR Manager is responsible for:
-
-* Viewing and searching employee information.
-* Managing employee salary information.
-* Viewing salary history.
-* Analyzing compensation across organizational dimensions.
-* Drilling down from analytical results to relevant employee cohorts.
-
-The MVP is designed primarily for the HR Manager persona.
+| | |
+| --- | --- |
+| **Backend** | Java 21 · Spring Boot 4.1 · Spring Data JPA · Flyway · Spring Security (JWT) |
+| **Database** | PostgreSQL 16 |
+| **Frontend** | Angular 20 (standalone, signals, zoneless) |
+| **Tests** | JUnit 5 · Mockito · AssertJ · Testcontainers |
 
 ---
 
-## 3. MVP Scope
+## Quick start
 
-## 3.1 Employee Management
+### With Docker (everything, seeded)
 
-The HR Manager can:
-
-* View a paginated list of employees.
-* Search employees.
-* Filter employees by country, department, and employment status.
-* Sort employee results.
-* View an individual employee's details.
-* Create an employee.
-* Update employee information.
-* Mark an employee as terminated/inactive.
-
-Employees will not be physically deleted through normal HR workflows because employee and salary history must remain available for historical reporting and auditability.
-
----
-
-## 3.2 Salary Management
-
-Each employee can have salary records containing:
-
-* Compensation amount.
-* Currency.
-* Effective start date.
-* Effective end date where applicable.
-
-For the MVP, compensation represents the employee's **annualized salary/compensation rate**.
-
-Salary history must be preserved when compensation changes.
-
-A salary change creates a new compensation record rather than modifying an existing historical record.
-
-### Salary rules
-
-* Salary records for the same employee must not overlap.
-* A new salary change cannot have an effective date in the past.
-* Future-dated salary changes are supported.
-* Mid-month salary changes are supported.
-* Historical salary records are immutable.
-* An active employee should have continuous salary coverage.
-* Monetary values must use precise decimal representation.
-* Salary amounts must have an associated currency.
-
-Actual payroll processing, salary proration, taxes, deductions, and payslip generation are outside the scope of the MVP.
-
----
-
-## 3.3 Compensation Analytics & Business Intelligence
-
-Analytics is a core product capability.
-
-The HR Manager should be able to understand the organization's compensation structure through KPI cards, charts, tables, filtering, sorting, and drill-down.
-
-### Top-level KPIs
-
-The dashboard will provide:
-
-* Active employee count.
-* Total annualized payroll.
-* Average salary.
-* Median salary.
-* Minimum salary.
-* Maximum salary.
-
-### Compensation breakdowns
-
-Compensation can be analyzed by:
-
-* Country.
-* Department.
-* Employment status.
-
-For each applicable grouping, the system should support metrics such as:
-
-* Employee count.
-* Total payroll.
-* Average salary.
-* Median salary.
-* Minimum salary.
-* Maximum salary.
-
-### Salary distribution
-
-The dashboard will visualize how employees are distributed across salary ranges.
-
-Salary distribution will use a selected reporting currency so that employees from different countries can be compared consistently.
-
-### Interactive exploration
-
-The HR Manager can:
-
-* Filter by country.
-* Filter by department.
-* Filter by employment status.
-* Select a reporting currency.
-* Search and sort employees.
-* Drill down from analytical results into relevant employee groups.
-* Navigate from aggregated compensation information to individual employee records.
-
-### Currency normalization
-
-Salary records are stored in their original currency.
-
-For organization-level analytics involving multiple currencies, compensation will be normalized into a selected reporting currency using configured exchange rates.
-
-The currency conversion mechanism will be isolated behind an abstraction so that a more sophisticated exchange-rate provider can be introduced later without changing the core compensation domain.
-
----
-
-## 4. Non-Functional Requirements
-
-### 4.1 Scalability
-
-The initial dataset will contain 10,000 employees.
-
-The system should be designed so that increasing employee volume does not require a fundamental architectural change.
-
-Employee APIs must use database-level pagination rather than loading the complete employee dataset into application memory.
-
-Filtering, sorting, and aggregation should be performed at the database level where appropriate.
-
-The backend will be implemented as a modular monolith. Microservices are intentionally not required for the initial scale.
-
-### 4.2 Maintainability
-
-The backend will use clear separation between:
-
-* API/controller layer.
-* Application/service layer.
-* Domain model.
-* Persistence layer.
-
-Business logic should not be implemented inside controllers.
-
-Dependencies should be injected rather than instantiated directly by business components.
-
-Interfaces/abstractions should be introduced where they provide meaningful flexibility, such as exchange-rate providers.
-
-The system should follow SOLID principles pragmatically without introducing unnecessary abstractions or design patterns.
-
-### 4.3 Data Integrity
-
-The system must:
-
-* Preserve salary history.
-* Prevent overlapping salary records.
-* Prevent invalid salary effective dates.
-* Maintain employee/salary relationships through database constraints.
-* Use precise decimal representation for monetary values.
-* Validate API input.
-* Provide consistent error responses.
-* Version-control database schema changes.
-
-### 4.4 Security
-
-Salary information is sensitive.
-
-The application must establish authentication and authorization boundaries so that compensation APIs are not publicly accessible.
-
-The MVP will focus on the HR Manager role and will not implement a complex enterprise-wide role hierarchy.
-
-### 4.5 Testing
-
-The application must contain meaningful automated tests covering core business functionality.
-
-Tests should be:
-
-* Fast.
-* Deterministic.
-* Readable.
-* Focused on business behavior.
-
-The test strategy will include:
-
-* Unit tests for core services and business rules.
-* API/controller tests.
-* Integration tests for important persistence behavior.
-
-### 4.6 Deployment
-
-The complete application must be deployable with:
-
-* Angular frontend.
-* Spring Boot backend.
-* PostgreSQL database.
-
-The repository should contain the necessary configuration and documentation to run the system locally and deploy it to a suitable hosting environment.
-
----
-
-## 5. Data Model — MVP Simplification
-
-The MVP deliberately keeps the compensation model simple.
-
-A compensation record contains:
-
-```text
-Compensation
-------------
-id
-employeeId
-amount
-currency
-effectiveFrom
-effectiveTo
-createdAt
+```bash
+docker compose up --build
 ```
 
-The system does **not** separately model:
+Then open <http://localhost:4200> and sign in with
+`hr.manager@acme.com` / `ChangeMe123!`.
 
-* Base pay.
-* Variable pay.
-* Bonuses.
-* Stock/equity units.
-* Benefits.
-* Allowances.
-* Payroll deductions.
+The first start creates the schema and seeds 10,000 employees with salary
+history — roughly 40,000 compensation records. Seeding is skipped on later
+starts.
 
-For the purpose of this assessment, the compensation amount represents the employee's annualized salary/compensation rate.
+### Without Docker
 
-### Reasoning
+You need a PostgreSQL 16 database, JDK 21+, and Node 20+.
 
-Modeling every compensation component would introduce additional domain complexity around:
+```bash
+createdb employee_management
 
-* Different compensation frequencies.
-* Bonus periods.
-* Variable compensation rules.
-* Equity valuation.
-* Vesting schedules.
-* Benefits.
-* Payroll calculations.
-* Country-specific compensation rules.
+# Backend, seeding on first run
+cd backend
+SEED_ENABLED=true ./mvnw spring-boot:run
 
-Those concerns are not necessary to demonstrate the core product value: managing salary data and understanding organizational pay.
-
-The simplified model provides a clean foundation that can be extended later if product requirements require more detailed total-rewards modeling.
-
----
-
-## 6. Employee Lifecycle
-
-Employees are not hard-deleted through normal application workflows.
-
-Instead, an employee's lifecycle is represented through employment status and relevant dates.
-
-For example:
-
-```text
-ACTIVE
-TERMINATED
+# Frontend, in a second terminal
+cd frontend
+npm install
+npm start          # http://localhost:4200, proxied to the backend
 ```
 
-Terminated employees remain in the database so that their historical salary information remains available for reporting and audit purposes.
-
-### Reasoning
-
-Hard deletion would destroy historical compensation information and could make historical analytics inaccurate.
-
-For example, deleting an employee who previously earned a salary would change historical payroll and compensation statistics.
+`ng serve` proxies `/api` to `localhost:8080` (`proxy.conf.json`), so the browser
+only ever talks to one origin and CORS never comes into play.
 
 ---
 
-## 7. Explicitly Out of Scope
+## Configuration
 
-The following are deliberately excluded from the MVP.
+Everything is overridable by environment variable. The defaults exist so a clean
+checkout starts; **override the two marked below in any shared environment.**
 
-### 7.1 Detailed Compensation Components
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/employee_management` | Database |
+| `DB_USERNAME` / `DB_PASSWORD` | `postgres` / `postgres` | Database credentials |
+| `JWT_SECRET` | dev value | **Override.** Token signing key, min 32 characters |
+| `HR_USERNAME` / `HR_PASSWORD` | `hr.manager@acme.com` / `ChangeMe123!` | **Override.** The HR Manager account; the password is bcrypt-hashed at startup and never stored |
+| `SEED_ENABLED` | `false` | Seed 10,000 employees, if the database is empty |
+| `ALLOWED_ORIGINS` | `http://localhost:4200` | CORS origins, only needed when the UI is served from another origin |
+| `SERVER_PORT` | `8080` | HTTP port |
 
-The MVP does not separately model base salary, variable pay, bonuses, stock units, benefits, or other compensation components.
-
-**Reason:** The assessment focuses on salary management and organizational compensation analytics. A detailed total-rewards model would add substantial complexity without materially improving the core workflow.
-
-The architecture should allow the compensation model to evolve later if required.
-
----
-
-### 7.2 Payroll Processing
-
-The system does not calculate:
-
-* Payroll.
-* Taxes.
-* Deductions.
-* Benefits.
-* Payslips.
-* Salary proration.
-* Country-specific payroll rules.
-
-**Reason:** Payroll is a separate and significantly more complex domain. The system manages compensation information rather than processing payroll.
-
-Salary amounts are treated as annualized compensation rates for the purposes of analytics.
+Exchange rates live in `application.properties` under `app.exchange-rates`.
 
 ---
 
-### 7.3 Employee Self-Service
+## Tests
 
-Employees cannot log into the system to view or manage their compensation.
+```bash
+cd backend
+./mvnw test      # 30 unit tests, ~1.5s, no Docker or database needed
+./mvnw verify    # + 20 integration tests against a real PostgreSQL container
+```
 
-**Reason:** The defined primary persona is the HR Manager. Employee-facing workflows are not required to demonstrate the core product.
+`mvn test` covers the business rules with mocked repositories and a fixed
+`Clock`, so date-dependent behaviour is deterministic.
 
----
+`mvn verify` adds the tests that can only be written against a real database:
+Flyway migrations, the exclusion constraint that stops salary periods
+overlapping, the analytics SQL, and the HTTP contract end to end including
+authentication. They need Docker; without it they are reported as **skipped**
+rather than failing, so `mvn verify` still works on a machine without Docker —
+the skip count makes the gap visible.
 
-### 7.4 Complex Role-Based Access Control
+To run them against a PostgreSQL you already have running (CI service container,
+or a dev machine without Docker):
 
-The MVP does not implement a large hierarchy of roles such as:
+```bash
+./mvnw verify \
+  -Dtest.postgres.container=false \
+  -Dspring.datasource.url=jdbc:postgresql://localhost:5432/employee_management_test \
+  -Dspring.datasource.username=postgres \
+  -Dspring.datasource.password=postgres
+```
 
-* HR Admin.
-* Finance Admin.
-* Country HR Admin.
-* Department Manager.
-* Employee.
+Frontend:
 
-**Reason:** A single HR Manager persona is sufficient for the assessment. The application will establish authorization boundaries so the security model can be extended later.
+```bash
+cd frontend
+npm run test:ci    # 40 tests, headless Chrome, ~0.3s
+npm run build
+```
 
----
-
-### 7.5 Live Foreign Exchange Integration
-
-The MVP does not depend on a third-party live FX service.
-
-**Reason:** External service availability should not be required for core salary management or deterministic testing.
-
-The application will use an exchange-rate abstraction so a live provider can be introduced later.
-
----
-
-### 7.6 Excel/CSV Upload
-
-The MVP does not provide an Excel upload workflow.
-
-A future version may allow the HR Manager to upload a predefined Excel template containing employee and salary data, validate the contents, and import up to 10,000 employees in a controlled batch process.
-
-**Reason:** Excel import directly addresses the organization's existing workflow and is a valuable future capability. However, a robust import feature introduces additional concerns such as:
-
-* Template validation.
-* File validation.
-* Row-level validation.
-* Duplicate detection.
-* Partial failures.
-* Error reporting.
-* Batch processing.
-* Transaction boundaries.
-
-These concerns are not required to demonstrate the core salary management and analytics capabilities.
-
-The MVP will instead provide deterministic seed data for the initial 10,000 employees.
+The frontend tests cover the parts with real logic: session handling and token
+expiry, the auth interceptor, how filters are turned into query parameters,
+money formatting, error-message extraction, and the salary form's mirroring of
+the server's effective-date rule. They run zoneless, exactly as the app does.
 
 ---
 
-### 7.7 HR/Payroll System Integrations
+## API
 
-Integrations with systems such as Workday, SAP, ADP, or other external HR/payroll platforms are excluded.
+All endpoints require `Authorization: Bearer <token>` except `login` and
+`/actuator/health`. Errors are RFC 9457 problem responses.
 
-**Reason:** External system contracts, authentication, synchronization, retries, and data reconciliation are outside the scope of the assessment.
+```
+POST   /api/v1/auth/login                                  → token
+GET    /api/v1/auth/me                                      → current user
 
----
+GET    /api/v1/employees?search=&countryCode=&department=&status=
+                        &page=&size=&sortBy=&direction=      → page of employees + current salary
+POST   /api/v1/employees                                     → hire
+GET    /api/v1/employees/{id}
+PUT    /api/v1/employees/{id}
+POST   /api/v1/employees/{id}/termination                    → terminate (history is kept)
+GET    /api/v1/employees/filter-options                      → countries and departments in use
 
-### 7.8 AI/Chat-Based Compensation Queries
+GET    /api/v1/employees/{id}/compensations                  → current + scheduled + history
+POST   /api/v1/employees/{id}/compensations                  → set or schedule a salary
+DELETE /api/v1/employees/{id}/compensations/{compensationId} → cancel a scheduled change
 
-The product will not include a natural-language compensation chatbot or AI query interface.
+GET    /api/v1/analytics/summary                             → KPIs
+GET    /api/v1/analytics/breakdown?dimension=COUNTRY|DEPARTMENT
+GET    /api/v1/analytics/distribution?bandSize=              → salary histogram
+GET    /api/v1/analytics/currencies                          → reporting currencies
+```
 
-**Reason:** Structured dashboards, analytical reporting, filtering, and visualization are the intended solution for answering compensation questions.
+Analytics endpoints share the filters `countryCode`, `department`,
+`status` (`ACTIVE` by default, `ALL` to include leavers), `currency` and `asOf`.
 
-AI may be used as a development accelerator, but it is not a product dependency.
+### Example
 
----
+```bash
+TOKEN=$(curl -s localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"hr.manager@acme.com","password":"ChangeMe123!"}' \
+  | python -c 'import json,sys; print(json.load(sys.stdin)["token"])')
 
-### 7.9 Notifications
-
-Email, SMS, Slack, and other salary-change notifications are excluded.
-
-**Reason:** Notifications are not necessary for the core HR salary management workflow.
-
----
-
-## 8. Key Business Assumptions
-
-1. Every employee has a unique employee identifier.
-2. An employee can have multiple salary records over time.
-3. An employee can have only one effective salary record at any point in time.
-4. Active employees should have continuous salary coverage.
-5. Historical salary records are immutable.
-6. New salary changes must have a future effective date.
-7. Compensation amounts represent annualized salary rates.
-8. Monetary compensation has an associated ISO currency code.
-9. Organization-level cross-currency analytics use a selected reporting currency.
-10. Stock/equity value is not part of the MVP compensation calculation.
-11. Terminated employees remain available for historical reporting.
-12. Normal HR workflows do not hard-delete employees.
-13. The initial system contains approximately 10,000 employees.
-14. PostgreSQL is the production relational database.
-15. The backend uses a modular monolithic architecture.
+curl -s -H "Authorization: Bearer $TOKEN" \
+  'localhost:8080/api/v1/analytics/summary?currency=USD'
+```
 
 ---
 
-## 9. Edge Cases
+## How the salary model works
 
-The following cases must be explicitly handled by the application:
+A salary is an **annualised amount in a currency, effective over a period**.
+Periods are half-open — `[effectiveFrom, effectiveTo)` — so consecutive periods
+share a boundary date without overlapping.
 
-| Edge Case                                          | Expected Behavior                                             |
-| -------------------------------------------------- | ------------------------------------------------------------- |
-| Overlapping salary records                         | Reject the new record                                         |
-| Salary change effective in the past                | Reject                                                        |
-| Salary change effective in the future              | Allow                                                         |
-| Mid-month salary change                            | Allow; treat salary as an annualized rate                     |
-| Historical salary modification                     | Reject                                                        |
-| Employee termination                               | Mark employee as terminated; retain history                   |
-| Employee hard deletion                             | Not available through normal HR workflow                      |
-| Active employee without salary                     | Reject or prevent activation until valid compensation exists  |
-| Invalid/negative salary amount                     | Reject                                                        |
-| Invalid currency                                   | Reject                                                        |
-| Duplicate employee identifier                      | Reject                                                        |
-| Invalid salary effective period                    | Reject                                                        |
-| Multiple currencies in organization-wide analytics | Normalize into selected reporting currency                    |
-| Missing exchange rate                              | Do not silently calculate; surface an appropriate error/state |
-| Terminated employees in current metrics            | Exclude from active-employee metrics                          |
-| Terminated employees in historical analysis        | Include when the selected analysis requires historical data   |
-| Salary history gap for active employee             | Prevent or flag as invalid                                    |
-| Future salary already scheduled                    | Prevent conflicting/overlapping future records                |
+```
+   hired            raise            raise           today      scheduled
+     │                │                │               │            │
+     ▼                ▼                ▼               ▼            ▼
+     ├── 82,000 ──────┼── 89,500 ──────┼── 96,000 ─────────────────►│
+     │                │                │                            │
+     └── history ─────┴────────────────┴─ current (open-ended) ─────┘
+```
 
+The rules the system enforces:
+
+* A salary change creates a new record; historical records are never modified.
+* Two periods for the same employee can never overlap — enforced by a PostgreSQL
+  exclusion constraint, not only by application code.
+* A **first** salary may take effect today. **Changing** an existing salary must
+  take effect on a future date, because the current period is already being paid.
+* One pending change at a time. Cancelling it re-opens the previous period, so
+  the employee is never left without a salary.
+* An employee cannot be terminated while a change is pending.
+* Termination keeps the salary history — historical payroll stays accurate.
+* Money is `BigDecimal` end to end; `NUMERIC(19,2)` in the database.
 
 ---
 
-## 10. Future Enhancements
+## Design notes
 
-Potential future capabilities include:
+**Aggregation runs in the database.** Analytics queries return one row per
+reported group, never one row per employee, so response size and memory stay
+flat as headcount grows.
 
-* Excel/CSV employee and salary import.
-* Detailed compensation components.
-* Bonus and variable compensation management.
-* Equity/stock-unit management.
-* Employee self-service.
-* Advanced role-based access control.
-* Live foreign-exchange integration.
-* HR/payroll system integrations.
-* Notifications and approval workflows.
-* Advanced compensation benchmarking.
-* Compensation planning and salary review cycles.
+**Currency conversion happens before aggregation,** by passing the rate table
+into the query. Converting afterwards would be wrong for the median: the median
+of per-currency medians is not the organisation's median.
+
+**A missing exchange rate is an error, not a zero.** If a currency in the data
+cannot be converted, the request is refused and names the currency, rather than
+silently dropping those salaries and reporting a plausible-looking smaller
+payroll.
+
+**Employees without a salary are counted separately** and surfaced on the
+dashboard. An active employee with no pay on record is a data-quality problem HR
+should see, not one to average away.
+
+The reasoning behind these and every other significant choice — including what
+was deliberately left out — is in [docs/trade-offs.md](docs/trade-offs.md).
+
+---
+
+## Repository layout
+
+```
+backend/                          Spring Boot application
+  src/main/java/com/acme/employeemanagement/
+    employee/                     employee records and lifecycle
+    compensation/                 the salary timeline
+    analytics/                    aggregation and reporting
+    common/                       exception handling, currency, clock
+    security/                     authentication
+    seed/                         10,000-employee generator
+  src/main/resources/db/migration Flyway migrations
+frontend/                         Angular application
+  src/app/core/                   API clients, auth, models
+  src/app/shared/                 pipes reused across features
+  src/app/features/               auth, employees, analytics —
+                                  one folder per component (ts/html/css/spec)
+docs/
+  requirements.md                 goal, scope, what is out of scope and why
+  architecture.md                 structure and data model
+  trade-offs.md                   every significant decision and its cost
+  ai-usage.md                     how AI was used, and what it got wrong
+docker-compose.yml                full stack
+```
+
+---
+
+## Status
+
+Verified on a development machine:
+
+* Backend builds; 30 unit tests and 20 integration tests pass against
+  PostgreSQL 16.4.
+* Flyway migrations apply to an empty database.
+* The seeder produces 10,000 employees, 41,477 compensation records, 10
+  countries, 10 departments, 10 currencies.
+* The API was exercised end to end against the seeded database — login,
+  authorisation, employee search, the salary lifecycle, and every analytics
+  endpoint.
+* The Angular app builds (78 kB initial transfer, lazy chunks per feature) and
+  its 40 unit tests pass in headless Chrome.
+
+Not yet run on this machine: the Angular app in a browser, the Docker build, and
+a cloud deployment — there was no Docker daemon and no browser automation
+available. `docker-compose.yml` and both Dockerfiles are included and are the
+intended path to a deployed environment.
