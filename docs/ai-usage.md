@@ -1,89 +1,37 @@
-# How AI was used
+These are the raw prompts I used. 
+Initially I started my project with ChatGTP, but later realized that it is becoming a big project and manually building files was time taking. So, later I shifted to Claude Code.
 
-AI wrote most of the code. It did not decide what the code should do. This note
-records how it was directed, what it got wrong, and what was verified by hand.
+ChatGTP
 
-## Method
+1) "Let's start thinking about this assignment. First focus on requirements, like we do in LLD rounds, focusing on design patterns and SOLID principles wherever they fit."
+2) "Clarify what 'answer questions about how the org pays people' means and update the requirements accordingly."
+3) "Should we support multiple compensation components such as base pay, bonus and stock units, or keep compensation simple?"
+4) "Should we support Excel upload for 10,000 employees? Would it add unnecessary complexity?"
 
-1. **Decide first, generate second.** Scope and the data model were written
-   before any code and handed to the model as the specification. The choices
-   with real consequences — half-open periods, database-enforced non-overlap,
-   aggregation in SQL — were made deliberately and are recorded in
-   [trade-offs.md](trade-offs.md).
-2. **Generate, then read every line.** The review question was always *can I
-   state the reason this line is here?* Several passes were re-specified rather
-   than patched.
-3. **Verify against something real.** The build, tests, migrations, analytics
-   SQL and the live API were executed, not assumed. What could not be executed
-   is marked as such below.
 
-## Where it paid off
+5) "I want to use Java 21 with Spring Boot and Angular. What architecture and dependencies make sense for this application?"
+6) "I wouldn't create a separate domain abstraction hierarchy just for the sake of LLD. Don't create unnecessary Factory, Strategy, Adapter or Facade classes. Only use a design pattern when there is a real problem to solve."
+7) "Why are we using UUID? Are there any complexity or performance concerns compared with Long?"
+8) "Can we use application.properties instead of application.yml? Is there any concern?"
 
-- Volume with a consistent house style: ~60 backend and ~60 frontend files.
-- Enumerating edge cases — zero and negative amounts, today vs tomorrow,
-  cross-currency medians, cancelling a historical record.
-- API archaeology: Spring Boot 4 and Testcontainers 2 both renamed things.
-- Turning decisions already made into readable prose.
 
-## Where it was wrong
+9) "Can two salary records overlap? Explain with an example."
+10) "What happens when salary changes mid-month? We need to consider this as an edge case."
+11) "Should salary history be immutable?" Yes
+12) "Should an employee be deleted when they leave, or should we keep the employee and mark them inactive?" Mark them inactive
+13) "Should salary changes effective in the past be allowed?" No
+14) "How should analytics handle multiple currencies? Should we use an adapter pattern or another approach?"
 
-Each of these shipped looking correct. The third column is what actually caught
-it — worth noting how rarely that column says "reading the code".
+15) "Go ahead with code files."
+16) "I tested the first few APIs. Go ahead with the next step."
+17) "Go ahead with the next step."
 
-| What was wrong | Why it slipped through | Caught by |
-| --- | --- | --- |
-| `pom.xml` used Testcontainers 1.x artifact names; the Maven wrapper config was missing entirely | Artifact renames are invisible in source | Running the build |
-| Two test files had never compiled — undefined variables, missing imports, wall-clock assertions in a codebase that injects a `Clock` | Plausible test code reads exactly like passing test code | Compiling |
-| Cancelling a scheduled raise deleted the future period but left the previous one closed, leaving the employee **unpaid from that date** | Every rule was correct in isolation; nothing composed them | Tracing state transitions by hand |
-| Every salary had to be future-dated, so someone hired today could not be paid | Faithful to the written spec, wrong for the user | Asking what HR does on a Monday morning |
-| Login returned 500 — `NimbusJwtEncoder` defaults to RS256 and cannot select an HMAC key | A library default, invisible in the code | Starting the application |
-| Scheduling a raise violated the exclusion constraint — Hibernate flushes inserts before updates | A mocked repository has no flush ordering | Integration tests on real PostgreSQL |
-| Tokens carried `ROLE_FACTOR_PASSWORD` | Spring Security grants an authority describing *how* you authenticated | Reading the login response |
-| The API test suite passed once, then failed — it commits deliberately and never cleaned up | The first run is always clean | Running it twice |
-| Analytics converted currency *after* aggregating, so medians were wrong | Sums survive that; medians do not | Reasoning about the statistic |
-| The Angular app had zero tests, and components sat flat in one folder instead of one folder each | It compiled and looked finished | A direct question about `.spec` files |
 
-Two patterns run through these. Bugs live in the **seam between the code and a
-real runtime** — a library default, an ORM's flush order, a framework's
-authority model — which a model reasons about least well. And a model checks
-whether code is *correct*, not whether it is *idiomatic* for the ecosystem it
-lives in.
+Claude code
 
-## What was verified
+18) Handover doc from ChatGTP
+19) Fix the dependencies error
+20) The frontend files structure you build is not considerd as good coding practice, why have you added scss, html and ts in singl file? Separate it.
+21) Still, the structure is not we follow generally, Don't you know how to make angular components? Like bar-chart, inside it we should have its file of html, scss, ts and spec, Not all other component files. Why are you making this silly mistakes.
+22) There were some styling issues, I fixed it, Now improve the charts visualization, maybe use some external libraries like Highchart or any other, so that we can have tooltips and good looking visualization.
 
-| Claim | How |
-| --- | --- |
-| Backend unit tests | `./mvnw test` — 30 tests, ~1.5s |
-| Integration tests | `./mvnw verify` against PostgreSQL 16.4 — 20 tests, green |
-| Migrations apply to an empty database | Flyway history table inspected after startup |
-| Exclusion constraint prevents overlap | Integration test asserts the rejection |
-| Seeder | 10,000 employees (9,229 active / 771 terminated), 41,477 compensation records, 10 countries, 10 departments, 10 currencies |
-| Analytics correctness | Queried the seeded database: $926.9M payroll, $100,890 average, $85,338 median (below average, matching the right skew); EUR figures exactly 0.92× USD |
-| Business rules over HTTP | Twelve-step lifecycle against the live API: first salary today, same-day change refused, negative amount refused, second pending change refused, termination blocked while pending, cancel restores coverage, current salary immutable, history survives termination, paying a leaver refused |
-| Authentication enforced | Anonymous request → 401; token issued and accepted |
-| Angular build | `npm run build`, Angular 20.3 — 78 kB initial transfer |
-| Frontend tests | `npm run test:ci` — 40 tests, headless Chrome, ~0.1s |
-| **Browser behaviour** | **Not verified in this session** — no browser automation was run |
-| **Docker deployment** | **Not executed** — no Docker daemon available; wiring checked statically only |
-| **Cloud deployment** | **Not executed** |
-
-## Prompting, briefly
-
-Stating invariants as constraints ("periods are `[from, to)`; the database
-enforces non-overlap; history is immutable") produced code that respected them.
-Stating them as goals did not.
-
-Asking for "tests for the compensation service" produced a test per rule in
-isolation — which is exactly why the cancellation bug survived. Asking for "a
-test that follows one employee through hire, raise, cancellation and
-termination, asserting the timeline stays continuous" found it. A model tests
-the code it wrote against the understanding it used to write it; it will not
-independently question that understanding.
-
-## Decided by hand, not delegated
-
-Scope and exclusions · the compensation data model and half-open periods ·
-enforcing non-overlap in the database · reporting in one currency and treating a
-missing rate as an error · surfacing employees with no salary · the auth model
-and token lifetime · no charting library · everything in
-[trade-offs.md](trade-offs.md).
