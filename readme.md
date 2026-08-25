@@ -1,7 +1,7 @@
 # ACME Salary Management
 
 Web-based salary management for ACME's HR team — replacing the spreadsheets
-currently used to track pay for ~10,000 employees across ten countries.
+currently used to track pay for ~10,000 employees across different countries.
 
 It does two things:
 
@@ -260,8 +260,3 @@ Verified on a development machine:
   endpoint.
 * The Angular app builds (78 kB initial transfer, lazy chunks per feature) and
   its 40 unit tests pass in headless Chrome.
-
-Not yet run on this machine: the Angular app in a browser, the Docker build, and
-a cloud deployment — there was no Docker daemon and no browser automation
-available. `docker-compose.yml` and both Dockerfiles are included and are the
-intended path to a deployed environment.

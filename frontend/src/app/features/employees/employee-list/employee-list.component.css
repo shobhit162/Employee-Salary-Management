@@ -3,6 +3,7 @@
   flex-wrap: wrap;
   gap: 1rem;
   align-items: end;
+  margin-top: 8px;
 }
 
 .filters .grow {
