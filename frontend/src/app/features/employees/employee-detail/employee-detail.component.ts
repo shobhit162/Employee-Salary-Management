@@ -7,6 +7,7 @@ import { EmployeeService } from '../../../core/api/employee.service';
 import { problemMessage } from '../../../core/api/problem';
 import { CompensationSummary } from '../../../core/models/compensation.model';
 import { Employee } from '../../../core/models/employee.model';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { MoneyPipe } from '../../../shared/pipes/money/money.pipe';
 import { SalaryChangeFormComponent } from '../salary-change-form/salary-change-form.component';
 
@@ -22,6 +23,7 @@ import { SalaryChangeFormComponent } from '../salary-change-form/salary-change-f
     TitleCasePipe,
     MoneyPipe,
     SalaryChangeFormComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './employee-detail.component.html',
   styleUrl: './employee-detail.component.css',
@@ -35,6 +37,7 @@ export class EmployeeDetailComponent implements OnInit {
   protected readonly summary = signal<CompensationSummary | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly terminating = signal(false);
+  protected readonly confirmingTermination = signal(false);
   protected readonly cancelling = signal(false);
 
   /** Keeps a salary change in the currency the employee is already paid in. */
@@ -72,19 +75,18 @@ export class EmployeeDetailComponent implements OnInit {
     });
   }
 
+  protected askToTerminate(): void {
+    this.confirmingTermination.set(true);
+  }
+
+  protected cancelTermination(): void {
+    this.confirmingTermination.set(false);
+  }
+
   protected terminate(): void {
     const person = this.employee();
 
     if (!person) {
-      return;
-    }
-
-    const confirmed = confirm(
-      `Terminate ${person.firstName} ${person.lastName}? ` +
-        'Their salary history will be kept.',
-    );
-
-    if (!confirmed) {
       return;
     }
 
@@ -95,9 +97,12 @@ export class EmployeeDetailComponent implements OnInit {
       next: (updated) => {
         this.employee.set(updated);
         this.terminating.set(false);
+        this.confirmingTermination.set(false);
       },
       error: (failure) => {
         this.terminating.set(false);
+        // Close the dialog so the error is not hidden behind it.
+        this.confirmingTermination.set(false);
         this.error.set(
           problemMessage(failure, 'Could not terminate the employee.'),
         );

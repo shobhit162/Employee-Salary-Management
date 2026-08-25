@@ -1,0 +1,28 @@
+<dialog
+  #dialog
+  aria-labelledby="confirm-dialog-title"
+  (cancel)="onCancelEvent($event)"
+  (click)="onBackdropClick($event)"
+>
+  <div class="panel">
+    <h2 id="confirm-dialog-title">{{ title() }}</h2>
+
+    @if (message()) {
+      <p class="muted">{{ message() }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" class="button-ghost" (click)="cancel()">
+        {{ cancelLabel() }}
+      </button>
+      <button
+        type="button"
+        [class.button-danger]="danger()"
+        [disabled]="busy()"
+        (click)="confirm()"
+      >
+        {{ busy() ? 'Working…' : confirmLabel() }}
+      </button>
+    </div>
+  </div>
+</dialog>

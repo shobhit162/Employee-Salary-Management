@@ -1,8 +1,9 @@
 import { DecimalPipe, TitleCasePipe } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, merge } from 'rxjs';
 
 import { EmployeeService } from '../../../core/api/employee.service';
 import { problemMessage } from '../../../core/api/problem';
@@ -15,6 +16,12 @@ import {
 import { MoneyPipe } from '../../../shared/pipes/money/money.pipe';
 
 const PAGE_SIZE = 25;
+
+/**
+ * Long enough that an ordinary typing rhythm produces one request rather than
+ * one per keystroke, short enough that the list still feels responsive.
+ */
+const SEARCH_DEBOUNCE_MS = 500;
 
 /**
  * The employee list — where the HR Manager actually works.
@@ -37,6 +44,7 @@ const PAGE_SIZE = 25;
 export class EmployeeListComponent implements OnInit {
   private readonly employees = inject(EmployeeService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly columns = [
     { field: 'employeeCode', label: 'Code' },
@@ -78,19 +86,29 @@ export class EmployeeListComponent implements OnInit {
       error: () => this.options.set({ countryCodes: [], departments: [] }),
     });
 
-    // Debounced so typing in the search box does not fire a request per keystroke.
-    this.filters.valueChanges
-      .pipe(
-        debounceTime(250),
-        distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
-      )
+    // Only the text box is debounced. Waiting on a dropdown would just add lag,
+    // since picking an option is a single deliberate action.
+    const searchChanges = this.filters.controls.search.valueChanges.pipe(
+      debounceTime(SEARCH_DEBOUNCE_MS),
+      map((term) => term.trim()),
+      distinctUntilChanged(),
+    );
+
+    const filterChanges = merge(
+      this.filters.controls.countryCode.valueChanges,
+      this.filters.controls.department.valueChanges,
+      this.filters.controls.status.valueChanges,
+    );
+
+    merge(searchChanges, filterChanges)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         const value = this.filters.getRawValue();
 
         this.query.update((current) => ({
           ...current,
           page: 0,
-          search: value.search || undefined,
+          search: value.search.trim() || undefined,
           countryCode: value.countryCode || undefined,
           department: value.department || undefined,
           status: (value.status || undefined) as EmployeeQuery['status'],

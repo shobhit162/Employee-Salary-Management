@@ -20,7 +20,7 @@
           type="button"
           class="button-danger"
           [disabled]="terminating()"
-          (click)="terminate()"
+          (click)="askToTerminate()"
         >
           Terminate
         </button>
@@ -97,6 +97,17 @@
       />
     }
   </section>
+
+  <app-confirm-dialog
+    [open]="confirmingTermination()"
+    [title]="'Terminate ' + person.firstName + ' ' + person.lastName + '?'"
+    message="Their salary history is kept, so past payroll reporting stays accurate. This cannot be undone from the app."
+    confirmLabel="Terminate"
+    [danger]="true"
+    [busy]="terminating()"
+    (confirmed)="terminate()"
+    (cancelled)="cancelTermination()"
+  />
 
   <div class="card table-card">
     <h2>Salary history</h2>
