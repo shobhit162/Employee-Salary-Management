@@ -1,0 +1,13 @@
+# The image installs its own Linux dependencies with `npm ci`. Copying the
+# host's node_modules over that layer mixes platform-specific binaries into it,
+# and .angular is a build cache that makes the image serve stale output.
+node_modules
+dist
+.angular
+out-tsc
+
+# Never needed inside the image, and they invalidate the COPY layer on every edit
+Dockerfile
+.dockerignore
+*.log
+.git

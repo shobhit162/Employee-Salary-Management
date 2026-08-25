@@ -1,0 +1,13 @@
+# Build output is produced inside the image; sending the host's copy only makes
+# the build context large and risks stale classes.
+target
+*.log
+.git
+
+# The image builds with its own Maven, so the wrapper is not needed
+mvnw
+mvnw.cmd
+.mvn
+
+Dockerfile
+.dockerignore
