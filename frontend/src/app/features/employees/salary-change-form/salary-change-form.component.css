@@ -1,0 +1,22 @@
+.row {
+  display: flex;
+  gap: 1rem;
+}
+
+.row .grow {
+  flex: 1;
+}
+
+form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+button {
+  justify-self: start;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}

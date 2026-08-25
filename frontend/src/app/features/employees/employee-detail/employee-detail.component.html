@@ -1,0 +1,138 @@
+@if (employee(); as person) {
+  <header class="page-header">
+    <div>
+      <h1>{{ person.firstName }} {{ person.lastName }}</h1>
+      <p class="muted">
+        {{ person.employeeCode }} · {{ person.jobTitle }} ·
+        {{ person.department }} · {{ person.countryCode }}
+      </p>
+    </div>
+    <div class="header-actions">
+      <span
+        class="badge"
+        [class.badge-muted]="person.employmentStatus === 'TERMINATED'"
+      >
+        {{ person.employmentStatus | titlecase }}
+      </span>
+      <a class="button button-ghost" [routerLink]="['edit']">Edit</a>
+      @if (person.employmentStatus === 'ACTIVE') {
+        <button
+          type="button"
+          class="button-danger"
+          [disabled]="terminating()"
+          (click)="terminate()"
+        >
+          Terminate
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (error(); as message) {
+    <p class="error card" role="alert">{{ message }}</p>
+  }
+
+  <div class="card">
+    <dl class="details">
+      <div><dt>Email</dt><dd>{{ person.email }}</dd></div>
+      <div><dt>Country</dt><dd>{{ person.countryCode }}</dd></div>
+      <div><dt>Department</dt><dd>{{ person.department }}</dd></div>
+      <div><dt>Job title</dt><dd>{{ person.jobTitle }}</dd></div>
+      @if (person.terminationDate) {
+        <div>
+          <dt>Terminated on</dt>
+          <dd>{{ person.terminationDate | date: 'mediumDate' }}</dd>
+        </div>
+      }
+    </dl>
+  </div>
+
+  <section class="salary">
+    <div class="card salary-now">
+      <h2>Current salary</h2>
+      @if (summary()?.current; as current) {
+        <p class="figure">
+          {{ current.amount | money: current.currency }}
+          <span class="muted small">per year</span>
+        </p>
+        <p class="muted small">
+          Effective {{ current.effectiveFrom | date: 'mediumDate' }}
+          @if (current.effectiveTo) {
+            until {{ current.effectiveTo | date: 'mediumDate' }}
+          }
+        </p>
+      } @else {
+        <p class="figure muted">—</p>
+        <p class="muted small">No salary on record.</p>
+      }
+
+      @if (summary()?.scheduled; as scheduled) {
+        <div class="scheduled">
+          <div>
+            <strong>{{ scheduled.amount | money: scheduled.currency }}</strong>
+            <div class="muted small">
+              Scheduled for {{ scheduled.effectiveFrom | date: 'mediumDate' }}
+            </div>
+          </div>
+          <button
+            type="button"
+            class="button-ghost"
+            [disabled]="cancelling()"
+            (click)="cancelScheduled(scheduled.id)"
+          >
+            Cancel
+          </button>
+        </div>
+      }
+    </div>
+
+    @if (person.employmentStatus === 'ACTIVE') {
+      <app-salary-change-form
+        class="card"
+        [employeeId]="person.id"
+        [hasCurrentSalary]="summary()?.current !== null"
+        [hasScheduledChange]="summary()?.scheduled !== null"
+        [defaultCurrency]="defaultCurrency()"
+        (saved)="loadCompensation(person.id)"
+      />
+    }
+  </section>
+
+  <div class="card table-card">
+    <h2>Salary history</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>From</th>
+          <th>To</th>
+          <th class="numeric">Amount</th>
+          <th>Currency</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (record of summary()?.history ?? []; track record.id) {
+          <tr>
+            <td>{{ record.effectiveFrom | date: 'mediumDate' }}</td>
+            <td>
+              {{
+                record.effectiveTo
+                  ? (record.effectiveTo | date: 'mediumDate')
+                  : 'Ongoing'
+              }}
+            </td>
+            <td class="numeric">{{ record.amount | money: record.currency }}</td>
+            <td>{{ record.currency }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty" colspan="4">No salary records yet.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+} @else if (error(); as message) {
+  <p class="error card" role="alert">{{ message }}</p>
+} @else {
+  <p class="muted">Loading…</p>
+}

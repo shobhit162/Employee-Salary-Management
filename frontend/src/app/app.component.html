@@ -1,0 +1,26 @@
+@if (auth.isAuthenticated()) {
+  <header class="app-bar">
+    <div class="brand">
+      <span class="mark">ACME</span>
+      <span>Salary Management</span>
+    </div>
+
+    <nav>
+      <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+      <a routerLink="/employees" routerLinkActive="active">Employees</a>
+    </nav>
+
+    <div class="account">
+      <span class="muted small">{{ auth.username() }}</span>
+      <button type="button" class="button-ghost" (click)="auth.logout()">
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <router-outlet />
+  </main>
+} @else {
+  <router-outlet />
+}

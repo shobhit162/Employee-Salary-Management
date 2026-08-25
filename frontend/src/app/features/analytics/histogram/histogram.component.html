@@ -1,0 +1,23 @@
+@if (bands().length) {
+  <div class="chart" [style.--columns]="bands().length">
+    @for (band of bands(); track band.lowerBound) {
+      <div class="column">
+        <div class="count">{{ band.employeeCount }}</div>
+        <div
+          class="column-bar"
+          [style.height.%]="heightOf(band.employeeCount)"
+          [attr.title]="band.employeeCount + ' employees in this salary band'"
+          role="meter"
+          [attr.aria-label]="labelFor(band)"
+          [attr.aria-valuenow]="band.employeeCount"
+        ></div>
+        <div class="tick">
+          {{ band.lowerBound | compactMoney: currency()
+          }}{{ band.upperBound === null ? '+' : '' }}
+        </div>
+      </div>
+    }
+  </div>
+} @else {
+  <p class="muted">No salaries to distribute for these filters.</p>
+}

@@ -1,0 +1,55 @@
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+dt {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+dd {
+  margin: 0.25rem 0 0;
+}
+
+.salary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.figure {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.figure .small {
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.scheduled {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.empty {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--muted);
+}

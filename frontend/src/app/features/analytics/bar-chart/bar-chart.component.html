@@ -1,0 +1,27 @@
+@if (data().length) {
+  <ul class="bars">
+    @for (bar of data(); track bar.label) {
+      <li>
+        <div class="bar-label">
+          <span>{{ bar.label }}</span>
+          <span class="value">{{ bar.value | compactMoney: currency() }}</span>
+        </div>
+        <div
+          class="track"
+          role="meter"
+          [attr.aria-label]="bar.label"
+          [attr.aria-valuenow]="bar.value"
+          [attr.aria-valuemin]="0"
+          [attr.aria-valuemax]="max()"
+        >
+          <div class="fill" [style.width.%]="widthOf(bar.value)"></div>
+        </div>
+        @if (bar.caption) {
+          <div class="muted small">{{ bar.caption }}</div>
+        }
+      </li>
+    }
+  </ul>
+} @else {
+  <p class="muted">No data for these filters.</p>
+}

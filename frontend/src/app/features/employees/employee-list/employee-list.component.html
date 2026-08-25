@@ -1,0 +1,137 @@
+<header class="page-header">
+  <div>
+    <h1>Employees</h1>
+    <p class="muted">
+      {{ page()?.totalElements ?? 0 | number }} matching employees
+    </p>
+  </div>
+  <a class="button" routerLink="/employees/new">Add employee</a>
+</header>
+
+<form class="card filters" [formGroup]="filters">
+  <label class="grow">
+    <span>Search</span>
+    <input
+      type="search"
+      formControlName="search"
+      placeholder="Name, email or employee code"
+    />
+  </label>
+
+  <label>
+    <span>Country</span>
+    <select formControlName="countryCode">
+      <option value="">All</option>
+      @for (country of options().countryCodes; track country) {
+        <option [value]="country">{{ country }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    <span>Department</span>
+    <select formControlName="department">
+      <option value="">All</option>
+      @for (department of options().departments; track department) {
+        <option [value]="department">{{ department }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    <span>Status</span>
+    <select formControlName="status">
+      <option value="ACTIVE">Active</option>
+      <option value="TERMINATED">Terminated</option>
+      <option value="">All</option>
+    </select>
+  </label>
+</form>
+
+@if (error(); as message) {
+  <p class="error card" role="alert">{{ message }}</p>
+}
+
+<div class="card table-card">
+  <table>
+    <thead>
+      <tr>
+        @for (column of columns; track column.field) {
+          <th
+            [class.sorted]="query().sortBy === column.field"
+            [attr.aria-sort]="ariaSort(column.field)"
+          >
+            <button type="button" (click)="sortBy(column.field)">
+              {{ column.label }}
+              @if (query().sortBy === column.field) {
+                <span aria-hidden="true">{{
+                  query().direction === 'ASC' ? '▲' : '▼'
+                }}</span>
+              }
+            </button>
+          </th>
+        }
+        <th class="numeric">Current salary</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of page()?.content ?? []; track row.employee.id) {
+        <tr>
+          <td>
+            <a [routerLink]="['/employees', row.employee.id]">
+              {{ row.employee.employeeCode }}
+            </a>
+          </td>
+          <td>
+            {{ row.employee.firstName }} {{ row.employee.lastName }}
+            <div class="muted small">{{ row.employee.email }}</div>
+          </td>
+          <td>{{ row.employee.countryCode }}</td>
+          <td>{{ row.employee.department }}</td>
+          <td>{{ row.employee.jobTitle }}</td>
+          <td>
+            <span
+              class="badge"
+              [class.badge-muted]="row.employee.employmentStatus === 'TERMINATED'"
+            >
+              {{ row.employee.employmentStatus | titlecase }}
+            </span>
+          </td>
+          <td class="numeric">
+            @if (row.currentCompensation; as pay) {
+              {{ pay.amount | money: pay.currency }}
+            } @else {
+              <span class="muted" title="No salary on record">—</span>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td class="empty" colspan="7">
+            {{ loading() ? 'Loading…' : 'No employees match these filters.' }}
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@if (page(); as result) {
+  <nav class="pagination">
+    <button
+      type="button"
+      [disabled]="result.first || loading()"
+      (click)="goToPage(result.number - 1)"
+    >
+      Previous
+    </button>
+    <span>Page {{ result.number + 1 }} of {{ result.totalPages || 1 }}</span>
+    <button
+      type="button"
+      [disabled]="result.last || loading()"
+      (click)="goToPage(result.number + 1)"
+    >
+      Next
+    </button>
+  </nav>
+}

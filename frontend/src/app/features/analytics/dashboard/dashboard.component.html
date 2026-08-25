@@ -1,0 +1,186 @@
+<header class="page-header">
+  <div>
+    <h1>Compensation dashboard</h1>
+    <p class="muted">
+      Salaries effective today, reported in {{ filters().currency }}.
+    </p>
+  </div>
+</header>
+
+<form class="card filters" [formGroup]="form">
+  <label>
+    <span>Country</span>
+    <select formControlName="countryCode">
+      <option value="">All countries</option>
+      @for (country of options().countryCodes; track country) {
+        <option [value]="country">{{ country }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    <span>Department</span>
+    <select formControlName="department">
+      <option value="">All departments</option>
+      @for (department of options().departments; track department) {
+        <option [value]="department">{{ department }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    <span>Employment status</span>
+    <select formControlName="status">
+      <option value="ACTIVE">Active only</option>
+      <option value="TERMINATED">Terminated only</option>
+      <option value="ALL">Everyone</option>
+    </select>
+  </label>
+
+  <label>
+    <span>Report in</span>
+    <select formControlName="currency">
+      @for (currency of currencies(); track currency) {
+        <option [value]="currency">{{ currency }}</option>
+      }
+    </select>
+  </label>
+</form>
+
+@if (error(); as message) {
+  <p class="error card" role="alert">{{ message }}</p>
+}
+
+@if (summary(); as result) {
+  <section class="kpis">
+    <div class="card kpi">
+      <span class="kpi-label">Employees</span>
+      <strong>{{ result.statistics.employeeCount | number }}</strong>
+    </div>
+    <div class="card kpi">
+      <span class="kpi-label">Annual payroll</span>
+      <strong>
+        {{ result.statistics.totalAnnualCompensation | money: result.currency }}
+      </strong>
+    </div>
+    <div class="card kpi">
+      <span class="kpi-label">Average salary</span>
+      <strong>{{ result.statistics.average | money: result.currency }}</strong>
+    </div>
+    <div class="card kpi">
+      <span class="kpi-label">Median salary</span>
+      <strong>{{ result.statistics.median | money: result.currency }}</strong>
+    </div>
+    <div class="card kpi">
+      <span class="kpi-label">Lowest</span>
+      <strong>{{ result.statistics.minimum | money: result.currency }}</strong>
+    </div>
+    <div class="card kpi">
+      <span class="kpi-label">Highest</span>
+      <strong>{{ result.statistics.maximum | money: result.currency }}</strong>
+    </div>
+  </section>
+
+  @if (missingSalaryCount() > 0) {
+    <p class="card notice">
+      {{ missingSalaryCount() | number }} of
+      {{ result.statistics.employeeCount | number }} employees have no salary on
+      record, so they are counted in headcount but not in payroll.
+      <a routerLink="/employees">Review employees</a>
+    </p>
+  }
+}
+
+<section class="panels">
+  <div class="card">
+    <div class="panel-header">
+      <h2>Pay by {{ dimension() === 'COUNTRY' ? 'country' : 'department' }}</h2>
+      <div class="toggle">
+        <button
+          type="button"
+          [class.active]="dimension() === 'COUNTRY'"
+          (click)="setDimension('COUNTRY')"
+        >
+          Country
+        </button>
+        <button
+          type="button"
+          [class.active]="dimension() === 'DEPARTMENT'"
+          (click)="setDimension('DEPARTMENT')"
+        >
+          Department
+        </button>
+      </div>
+    </div>
+
+    <app-bar-chart [data]="breakdownBars()" [currency]="filters().currency" />
+  </div>
+
+  <div class="card">
+    <h2>Salary distribution</h2>
+    <p class="muted small">
+      Employees per {{ bandSize | number }} {{ filters().currency }} band.
+    </p>
+    <app-histogram
+      [bands]="distribution()?.bands ?? []"
+      [currency]="filters().currency"
+    />
+  </div>
+</section>
+
+@if (breakdown(); as result) {
+  <div class="card table-card">
+    <h2>
+      {{ result.dimension === 'COUNTRY' ? 'Country' : 'Department' }} detail
+    </h2>
+    <table>
+      <thead>
+        <tr>
+          <th>
+            {{ result.dimension === 'COUNTRY' ? 'Country' : 'Department' }}
+          </th>
+          <th class="numeric">Employees</th>
+          <th class="numeric">Payroll</th>
+          <th class="numeric">Average</th>
+          <th class="numeric">Median</th>
+          <th class="numeric">Lowest</th>
+          <th class="numeric">Highest</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of result.rows; track row.key) {
+          <tr>
+            <td>{{ row.key }}</td>
+            <td class="numeric">
+              {{ row.statistics.employeeCount | number }}
+            </td>
+            <td class="numeric">
+              {{ row.statistics.totalAnnualCompensation | money: result.currency }}
+            </td>
+            <td class="numeric">
+              {{ row.statistics.average | money: result.currency }}
+            </td>
+            <td class="numeric">
+              {{ row.statistics.median | money: result.currency }}
+            </td>
+            <td class="numeric">
+              {{ row.statistics.minimum | money: result.currency }}
+            </td>
+            <td class="numeric">
+              {{ row.statistics.maximum | money: result.currency }}
+            </td>
+            <td>
+              <a
+                class="drill"
+                [routerLink]="['/employees']"
+                [queryParams]="drillDownParams(row.key)"
+                >View employees</a
+              >
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

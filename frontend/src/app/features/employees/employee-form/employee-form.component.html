@@ -1,0 +1,62 @@
+<header class="page-header">
+  <h1>{{ employeeId() ? 'Edit employee' : 'Add employee' }}</h1>
+  <a
+    class="button button-ghost"
+    [routerLink]="employeeId() ? ['/employees', employeeId()] : ['/employees']"
+    >Cancel</a
+  >
+</header>
+
+<form class="card form-grid" [formGroup]="form" (ngSubmit)="submit()">
+  @if (!employeeId()) {
+    <label>
+      <span>Employee code</span>
+      <input formControlName="employeeCode" placeholder="ACME-00001" />
+    </label>
+  }
+
+  <label>
+    <span>First name</span>
+    <input formControlName="firstName" />
+  </label>
+
+  <label>
+    <span>Last name</span>
+    <input formControlName="lastName" />
+  </label>
+
+  <label>
+    <span>Email</span>
+    <input type="email" formControlName="email" />
+  </label>
+
+  <label>
+    <span>Country code</span>
+    <input
+      class="uppercase"
+      formControlName="countryCode"
+      maxlength="2"
+      placeholder="US"
+    />
+  </label>
+
+  <label>
+    <span>Department</span>
+    <input formControlName="department" />
+  </label>
+
+  <label class="span-2">
+    <span>Job title</span>
+    <input formControlName="jobTitle" />
+  </label>
+
+  @if (error(); as message) {
+    <p class="error span-2" role="alert">{{ message }}</p>
+  }
+
+  <div class="span-2 actions">
+    <button type="submit" [disabled]="form.invalid || busy()">
+      {{ busy() ? 'Saving…' : 'Save' }}
+    </button>
+  </div>
+</form>

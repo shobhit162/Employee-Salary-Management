@@ -2,6 +2,12 @@
 **/target/
 *.class
 
+# Node / Angular
+**/node_modules/
+**/dist/
+**/.angular/
+**/out-tsc/
+
 # IDE
 .idea/
 *.iml

@@ -1,0 +1,48 @@
+<h2>{{ hasCurrentSalary() ? 'Change salary' : 'Set salary' }}</h2>
+
+@if (hasScheduledChange()) {
+  <p class="muted">
+    A salary change is already scheduled. Cancel it before scheduling another.
+  </p>
+} @else {
+  <p class="muted small">
+    {{
+      hasCurrentSalary()
+        ? 'A salary change must take effect on a future date.'
+        : 'A first salary can take effect from today.'
+    }}
+  </p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="row">
+      <label class="grow">
+        <span>Annual amount</span>
+        <input type="number" min="1" step="1" formControlName="amount" />
+      </label>
+
+      <label>
+        <span>Currency</span>
+        <input class="uppercase" formControlName="currency" maxlength="3" />
+      </label>
+    </div>
+
+    <label>
+      <span>Effective from</span>
+      <input
+        type="date"
+        [min]="earliestDate()"
+        formControlName="effectiveFrom"
+      />
+    </label>
+
+    @if (error(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+
+    <button type="submit" [disabled]="form.invalid || busy()">
+      {{
+        busy() ? 'Saving…' : hasCurrentSalary() ? 'Schedule change' : 'Save'
+      }}
+    </button>
+  </form>
+}

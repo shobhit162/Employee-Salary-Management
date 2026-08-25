@@ -1,0 +1,25 @@
+.login-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: min(24rem, 100%);
+  display: grid;
+  gap: 0.5rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.muted {
+  margin: 0 0 0.75rem;
+}
+
+button {
+  margin-top: 1rem;
+}
