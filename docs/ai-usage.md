@@ -34,4 +34,5 @@ Claude code
 20) The frontend files structure you build is not considerd as good coding practice, why have you added scss, html and ts in singl file? Separate it.
 21) Still, the structure is not we follow generally, Don't you know how to make angular components? Like bar-chart, inside it we should have its file of html, scss, ts and spec, Not all other component files. Why are you making this silly mistakes.
 22) There were some styling issues, I fixed it, Now improve the charts visualization, maybe use some external libraries like Highchart or any other, so that we can have tooltips and good looking visualization.
+23) I found some files where the SOLID principles are not considered. Especially the ISP principle is being broken very badly. I think I informed the previous AI to follow the SOLID principles from the start but you messed it up. 
 
